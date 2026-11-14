@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.BatteryManager
 import android.os.Bundle
@@ -18,25 +19,41 @@ import android.os.StatFs
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import rikka.shizuku.Shizuku
 
+private const val ACCENT = "#FF2D55"
+private const val SUB = "#C4C0F2"
+private const val GLASS = "#331B1A3F"
+private const val STROKE = "#665B57C9"
+
 class MainActivity : Activity() {
 
-    private val tweaks = listOf(
-        Triple("global", "window_animation_scale", "0.5"),
-        Triple("global", "transition_animation_scale", "0.5"),
-        Triple("global", "animator_duration_scale", "0.5"),
-        Triple("system", "peak_refresh_rate", "120"),
-        Triple("system", "min_refresh_rate", "120")
+    private data class Setting(val ns: String, val key: String, val value: String)
+    private data class Feature(val id: String, val title: String, val sub: String, val settings: List<Setting>)
+
+    private val features = listOf(
+        Feature("licin", "Layar Licin", "Refresh rate 120Hz", listOf(
+            Setting("system", "peak_refresh_rate", "120"),
+            Setting("system", "min_refresh_rate", "120")
+        )),
+        Feature("ringan", "Layar Ringan", "Animasi jendela dipercepat", listOf(
+            Setting("global", "window_animation_scale", "0.5"),
+            Setting("global", "transition_animation_scale", "0.5")
+        )),
+        Feature("responsif", "Responsif Naik", "Durasi animasi lebih singkat", listOf(
+            Setting("global", "animator_duration_scale", "0.5")
+        ))
     )
 
     private val handler = Handler(Looper.getMainLooper())
     private val prefs by lazy { getSharedPreferences("hiroxware", MODE_PRIVATE) }
+    private val badges = mutableMapOf<String, TextView>()
+    private val cards = mutableMapOf<String, LinearLayout>()
 
     private lateinit var ramCard: Card
     private lateinit var batteryCard: Card
@@ -61,42 +78,32 @@ class MainActivity : Activity() {
 
     private inner class Card(title: String) {
         val value = TextView(this@MainActivity).apply {
-            textSize = 26f
+            textSize = 24f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
         }
         val sub = TextView(this@MainActivity).apply {
             textSize = 11f
-            setTextColor(Color.parseColor("#8F8BC7"))
+            setTextColor(Color.parseColor(SUB))
         }
         val bar = ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100
-            progressTintList = ColorStateList.valueOf(Color.parseColor("#FF2D55"))
-            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#2A2757"))
+            progressTintList = ColorStateList.valueOf(Color.parseColor(ACCENT))
+            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#22FFFFFF"))
         }
-        val dotGreen = dot("#34D399")
-        val dotRed = dot("#FF2D55")
-
         val view = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = box("#1C1A44", "#4B47A0", 20)
-
-            val top = LinearLayout(this@MainActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                addView(TextView(this@MainActivity).apply {
-                    text = title
-                    textSize = 10f
-                    setTextColor(Color.parseColor("#B8B4EC"))
-                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(dotGreen, LinearLayout.LayoutParams(dp(6), dp(6)).apply { setMargins(0, 0, dp(4), 0) })
-                addView(dotRed, LinearLayout.LayoutParams(dp(6), dp(6)))
-            }
-            addView(top)
+            background = box(GLASS, STROKE, 20)
+            elevation = dp(10).toFloat()
+            addView(TextView(this@MainActivity).apply {
+                text = title
+                textSize = 10f
+                setTextColor(Color.parseColor(SUB))
+            })
             addView(value)
             addView(sub)
-            addView(bar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(4)).apply {
+            addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(4)).apply {
                 topMargin = dp(10)
             })
         }
@@ -106,8 +113,10 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         setContentView(buildUi())
         Shizuku.addRequestPermissionResultListener(permListener)
+        refreshToggles()
         refreshStatus()
     }
 
@@ -131,32 +140,29 @@ class MainActivity : Activity() {
     private fun buildUi(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#0A0920"))
-            setPadding(dp(14), dp(28), dp(14), dp(24))
+            setPadding(dp(14), dp(34), dp(14), dp(24))
         }
 
-        // Header
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            addView(TextView(this@MainActivity).apply {
+                text = "Hiröxware"
+                textSize = 22f
+                setTextColor(Color.parseColor(ACCENT))
+                typeface = Typeface.DEFAULT_BOLD
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(pill("ENGINE ACTIVE", ACCENT))
         }
-        header.addView(TextView(this).apply {
-            text = "Hiröxware"
-            textSize = 24f
-            setTextColor(Color.parseColor("#FF2D55"))
-            typeface = Typeface.DEFAULT_BOLD
-        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(pill("ENGINE ACTIVE"))
         root.addView(header)
 
         statusText = TextView(this).apply {
             textSize = 11f
-            setTextColor(Color.parseColor("#8F8BC7"))
+            setTextColor(Color.parseColor(SUB))
             setPadding(0, dp(4), 0, 0)
         }
         root.addView(statusText)
 
-        // Kartu utama
         ramCard = Card("RAM")
         batteryCard = Card("BATERAI")
         rateCard = Card("LAYAR")
@@ -164,62 +170,113 @@ class MainActivity : Activity() {
         root.addView(row(ramCard.view, batteryCard.view))
         root.addView(row(rateCard.view, storageCard.view))
 
-        // Tombol utama
-        root.addView(bigButton("Aktifkan Tweak", "#FF2D55", "#FF7A93") { applyTweaks() }, topMargin(16))
-        root.addView(bigButton("Kembalikan ke Stok", "#3B3880", "#6A64C8") { revertTweaks() }, topMargin(10))
-        root.addView(bigButton("Izinkan Shizuku", "#262450", "#3B3880") { requestShizuku() }, topMargin(10))
+        root.addView(label("FITUR"), topMargin(18))
+        features.forEach { root.addView(featureCard(it), topMargin(10)) }
+
+        root.addView(floatingButton("Revert ke Stok", "#663B3880", "#66FFFFFF") { revertAll() }, topMargin(18))
+        root.addView(floatingButton("Izinkan Shizuku", "#66262450", "#55FFFFFF") { requestShizuku() }, topMargin(10))
 
         logText = TextView(this).apply {
             textSize = 12f
-            setTextColor(Color.parseColor("#B8B4EC"))
+            setTextColor(Color.parseColor(SUB))
             setPadding(0, dp(14), 0, 0)
         }
         root.addView(logText)
 
-        return ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#0A0920"))
-            addView(root)
+        return ScrollView(this).apply { addView(root) }
+    }
+
+    private fun featureCard(f: Feature): LinearLayout {
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(this@MainActivity).apply {
+                text = f.title
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.WHITE)
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = f.sub
+                textSize = 11f
+                setTextColor(Color.parseColor(SUB))
+            })
+        }
+        val badge = TextView(this).apply {
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(dp(14), dp(6), dp(14), dp(6))
+        }
+        badges[f.id] = badge
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            elevation = dp(12).toFloat()
+            isClickable = true
+            setOnClickListener { toggle(f.id) }
+            addView(texts, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(badge)
+        }
+        cards[f.id] = card
+        return card
+    }
+
+    private fun refreshToggles() {
+        features.forEach { f ->
+            val on = isOn(f.id)
+            badges[f.id]?.apply {
+                text = if (on) "ON" else "OFF"
+                setTextColor(Color.parseColor(if (on) "#FFFFFF" else SUB))
+                background = box(if (on) ACCENT else "#22FFFFFF", if (on) ACCENT else "#44FFFFFF", 14)
+            }
+            cards[f.id]?.background = box(if (on) "#33FF2D55" else GLASS, if (on) ACCENT else STROKE, 22)
         }
     }
 
-    private fun pill(label: String): TextView = TextView(this).apply {
+    private fun floatingButton(label: String, fill: String, stroke: String, onClick: () -> Unit): TextView =
+        TextView(this).apply {
+            text = label
+            gravity = Gravity.CENTER
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            background = box(fill, stroke, 22)
+            elevation = dp(14).toFloat()
+            isClickable = true
+            setOnClickListener { onClick() }
+        }
+
+    private fun pill(label: String, color: String): TextView = TextView(this).apply {
         text = label
         textSize = 9f
-        setTextColor(Color.parseColor("#FF2D55"))
         typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.parseColor(color))
         setPadding(dp(8), dp(4), dp(8), dp(4))
-        background = box("#1C1A44", "#FF2D55", 12)
+        background = box("#1C1A44", color, 12)
     }
 
-    private fun dot(hex: String): View = View(this).apply {
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.parseColor(hex))
-        }
+    private fun label(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 11f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.parseColor(SUB))
     }
 
     private fun row(left: View, right: View): LinearLayout =
         LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            addView(left, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+            addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 setMargins(0, dp(10), dp(5), 0)
             })
-            addView(right, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+            addView(right, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 setMargins(dp(5), dp(10), 0, 0)
             })
         }
 
-    private fun bigButton(label: String, fill: String, stroke: String, onClick: () -> Unit): Button =
-        Button(this).apply {
-            text = label
-            isAllCaps = false
-            setTextColor(Color.WHITE)
-            background = box(fill, stroke, 18)
-            setOnClickListener { onClick() }
-        }
-
-    private fun topMargin(px: Int): LinearLayout.LayoutParams =
-        LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+    private fun topMargin(px: Int) =
+        LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             .apply { topMargin = dp(px) }
 
     private fun box(fill: String, stroke: String, radiusDp: Int) = GradientDrawable().apply {
@@ -287,6 +344,8 @@ class MainActivity : Activity() {
         false
     }
 
+    private fun ready(): Boolean = shizukuBinderAlive() && shizukuGranted()
+
     private fun requestShizuku() {
         if (!shizukuBinderAlive()) {
             log("Shizuku belum aktif. Buka aplikasi Shizuku dan nyalakan dulu.")
@@ -313,52 +372,66 @@ class MainActivity : Activity() {
         false
     }
 
-    // ---------- Terapkan & kembalikan ----------
+    // ---------- Nyala / mati fitur ----------
+
+    private fun isOn(id: String) = prefs.getBoolean("on_$id", false)
+
+    private fun toggle(id: String) {
+        if (!ready()) {
+            log("Aktifkan Shizuku dan izinkan dulu.")
+            return
+        }
+        prefs.edit().putBoolean("on_$id", !isOn(id)).apply()
+        refreshToggles()
+        applyAll()
+    }
 
     private fun saveOriginals() {
         val cr = contentResolver
         val edit = prefs.edit()
-        for ((ns, key, _) in tweaks) {
-            val name = "orig_${ns}_$key"
+        for (f in features) for (s in f.settings) {
+            val name = "orig_${s.ns}_${s.key}"
             if (prefs.contains(name)) continue
-            val value = if (ns == "global") Settings.Global.getString(cr, key) else Settings.System.getString(cr, key)
+            val value = if (s.ns == "global") Settings.Global.getString(cr, s.key) else Settings.System.getString(cr, s.key)
             edit.putString(name, value ?: "null")
         }
         edit.apply()
     }
 
-    private fun applyTweaks() {
-        if (!shizukuBinderAlive() || !shizukuGranted()) {
-            log("Aktifkan Shizuku dan izinkan dulu.")
-            return
-        }
+    private fun restoreCmd(s: Setting): String? {
+        val stored = prefs.getString("orig_${s.ns}_${s.key}", null) ?: return null
+        return if (stored == "null") "settings delete ${s.ns} ${s.key}"
+        else "settings put ${s.ns} ${s.key} $stored"
+    }
+
+    private fun applyAll(resetAfter: Boolean = false) {
         saveOriginals()
-        log("Menerapkan tweak...")
+        log("Menerapkan...")
         Thread {
-            val ok = tweaks.all { (ns, key, value) -> runShell("settings put $ns $key $value") }
+            var ok = true
+            for (f in features) {
+                val on = isOn(f.id)
+                for (s in f.settings) {
+                    val cmd = if (on) "settings put ${s.ns} ${s.key} ${s.value}" else restoreCmd(s) ?: continue
+                    if (!runShell(cmd)) ok = false
+                }
+            }
+            if (resetAfter) prefs.edit().clear().apply()
             runOnUiThread {
-                log(if (ok) "Tweak aktif. Tekan Kembalikan kalau ada yang tidak cocok." else "Sebagian tweak gagal.")
+                refreshToggles()
+                log(if (ok) "Berhasil." else "Sebagian gagal. Pastikan Shizuku masih aktif.")
             }
         }.start()
     }
 
-    private fun revertTweaks() {
-        if (!shizukuBinderAlive() || !shizukuGranted()) {
+    private fun revertAll() {
+        if (!ready()) {
             log("Shizuku tidak aktif. Buka Shizuku dulu.")
             return
         }
-        log("Mengembalikan ke stok...")
-        Thread {
-            var ok = true
-            for ((ns, key, _) in tweaks) {
-                val stored = prefs.getString("orig_${ns}_$key", null) ?: continue
-                val cmd = if (stored == "null") "settings delete $ns $key" else "settings put $ns $key $stored"
-                if (!runShell(cmd)) ok = false
-            }
-            prefs.edit().clear().apply()
-            runOnUiThread {
-                log(if (ok) "Sudah dikembalikan ke stok." else "Sebagian gagal dikembalikan.")
-            }
-        }.start()
+        val edit = prefs.edit()
+        features.forEach { edit.putBoolean("on_${it.id}", false) }
+        edit.apply()
+        applyAll(resetAfter = true)
     }
 }
