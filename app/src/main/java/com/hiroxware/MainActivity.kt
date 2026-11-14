@@ -1,4 +1,3 @@
-        
 package com.hiroxware
 
 import android.app.Activity
@@ -568,6 +567,60 @@ class MainActivity : Activity() {
         edit.apply()
     }
 
-    private fun restoreCmd(s: Setting): String? {
+        private fun restoreCmd(s: Setting): String? {
         val stored = prefs.getString("orig_${s.ns}_${s.key}", null) ?: return null
-        
+        return if (stored == "null") {
+            "settings delete ${s.ns} ${s.key}"
+        } else {
+            "settings put ${s.ns} ${s.key} $stored"
+        }
+    }
+
+    private fun applyAll(resetAfter: Boolean) {
+        saveOriginals()
+        log("Menerapkan...")
+        Thread {
+            var ok = true
+            for (f in features) {
+                val on = isOn(f.id)
+                for (s in f.settings) {
+                    val cmd: String? = if (on) {
+                        "settings put ${s.ns} ${s.key} ${s.value}"
+                    } else {
+                        restoreCmd(s)
+                    }
+                    if (cmd != null) {
+                        if (!runShell(cmd)) ok = false
+                    }
+                }
+            }
+            if (resetAfter) {
+                prefs.edit().clear().apply()
+            }
+            val finalOk = ok
+            runOnUiThread {
+                refreshToggles()
+                if (finalOk) {
+                    log("Berhasil.")
+                } else {
+                    log("Sebagian gagal. Pastikan Shizuku masih aktif.")
+                }
+            }
+        }.start()
+    }
+
+    private fun revertAll() {
+        if (!ready()) {
+            log("Shizuku tidak aktif. Buka Shizuku dulu.")
+            return
+        }
+        val edit = prefs.edit()
+        for (f in features) {
+            edit.putBoolean("on_${f.id}", false)
+        }
+        edit.apply()
+        applyAll(true)
+    }
+}
+        val stored = prefs.getString("orig_${s.ns}_${s.key}", null) ?: return null
+            
