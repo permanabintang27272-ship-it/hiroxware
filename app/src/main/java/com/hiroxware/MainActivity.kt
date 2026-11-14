@@ -52,6 +52,8 @@ class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("hiroxware", MODE_PRIVATE) }
     private val badges = mutableMapOf<String, TextView>()
     private val cards = mutableMapOf<String, LinearLayout>()
+    private val tiltTargets = mutableListOf<View>()
+    private var tilt: TiltEffect? = null
 
     private lateinit var ramCard: Card
     private lateinit var batteryCard: Card
@@ -120,6 +122,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(buildUi())
+        tilt = TiltEffect(this, tiltTargets, dp(18).toFloat())
         Shizuku.addRequestPermissionResultListener(permListener)
         refreshToggles()
         refreshStatus()
@@ -128,11 +131,13 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         handler.post(ticker)
+        tilt?.start()
     }
 
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(ticker)
+        tilt?.stop()
     }
 
     override fun onDestroy() {
@@ -174,6 +179,7 @@ class MainActivity : Activity() {
         storageCard = Card("PENYIMPANAN")
         root.addView(row(ramCard.view, batteryCard.view))
         root.addView(row(rateCard.view, storageCard.view))
+        listOf(ramCard.view, batteryCard.view, rateCard.view, storageCard.view).forEach { tiltTargets.add(it) }
 
         root.addView(label("FITUR"), topMargin(18))
         features.forEach { root.addView(featureCard(it), topMargin(10)) }
@@ -227,6 +233,7 @@ class MainActivity : Activity() {
             addView(badge)
         }
         cards[f.id] = card
+        tiltTargets.add(card)
         return card
     }
 
@@ -255,7 +262,7 @@ class MainActivity : Activity() {
         elevation = dp(12).toFloat()
         isClickable = true
         setOnClickListener { onClick() }
-    }
+    }.also { tiltTargets.add(it) }
 
     private fun pill(label: String): TextView = TextView(this).apply {
         text = label
@@ -295,7 +302,6 @@ class MainActivity : Activity() {
         LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             .apply { topMargin = dp(px) }
 
-    // Latar kaca abu-abu: gradasi dari atas ke bawah, sudut membulat, garis tipis
     private fun glossy(radiusDp: Int, top: String, bottom: String, stroke: String) =
         GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
