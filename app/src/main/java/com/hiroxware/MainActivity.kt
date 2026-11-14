@@ -1,3 +1,4 @@
+
 package com.hiroxware
 
 import android.app.Activity
@@ -158,7 +159,6 @@ class MainActivity : Activity() {
             setPadding(dp(14), dp(34), dp(14), dp(24))
         }
 
-        // Header
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -172,7 +172,6 @@ class MainActivity : Activity() {
         }
         root.addView(header)
 
-        // Kartu utama dengan logo kelinci
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -206,7 +205,6 @@ class MainActivity : Activity() {
         root.addView(hero, topMargin(12))
         tiltTargets.add(hero)
 
-        // Baris ringkasan
         activeValue = valueText("0")
         shizukuValue = valueText("...")
         val stats = LinearLayout(this).apply {
@@ -219,7 +217,6 @@ class MainActivity : Activity() {
         root.addView(stats, topMargin(12))
         tiltTargets.add(stats)
 
-        // Kartu angka
         ramCard = Card("RAM")
         batteryCard = Card("BATERAI")
         rateCard = Card("LAYAR")
@@ -231,11 +228,9 @@ class MainActivity : Activity() {
         tiltTargets.add(rateCard.view)
         tiltTargets.add(storageCard.view)
 
-        // Fitur
         root.addView(label("FITUR"), topMargin(18))
         features.forEach { root.addView(featureCard(it), topMargin(10)) }
 
-        // Tombol
         root.addView(button("Revert ke Stok") { revertAll() }, topMargin(18))
         root.addView(button("Izinkan Shizuku") { requestShizuku() }, topMargin(10))
 
@@ -541,4 +536,6 @@ class MainActivity : Activity() {
         val edit = prefs.edit()
         features.forEach { edit.putBoolean("on_${it.id}", false) }
         edit.apply()
- 
+        applyAll(resetAfter = true)
+    }
+}
