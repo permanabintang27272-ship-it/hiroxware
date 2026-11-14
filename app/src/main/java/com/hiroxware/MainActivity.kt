@@ -1,5 +1,4 @@
-
-package com.hiroxware
+lpackage com.hiroxware
 
 import android.app.Activity
 import android.app.ActivityManager
@@ -156,7 +155,7 @@ class MainActivity : Activity() {
     private fun buildUi(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(34), dp(14), dp(24))
+            setPadding(dp(14), dp(34), dp(14), dp(40))
         }
 
         val header = LinearLayout(this).apply {
@@ -228,16 +227,16 @@ class MainActivity : Activity() {
         tiltTargets.add(rateCard.view)
         tiltTargets.add(storageCard.view)
 
-        root.addView(label("FITUR"), topMargin(18))
-        features.forEach { root.addView(featureCard(it), topMargin(10)) }
+        root.addView(label("FITUR"), topMargin(22))
+        features.forEach { root.addView(featureCard(it), topMargin(12)) }
 
-        root.addView(button("Revert ke Stok") { revertAll() }, topMargin(18))
-        root.addView(button("Izinkan Shizuku") { requestShizuku() }, topMargin(10))
+        root.addView(button("Revert ke Stok") { revertAll() }, topMargin(30))
+        root.addView(button("Izinkan Shizuku") { requestShizuku() }, topMargin(22))
 
         logText = TextView(this).apply {
             textSize = 12f
             setTextColor(Color.parseColor(SUB))
-            setPadding(0, dp(14), 0, 0)
+            setPadding(0, dp(16), 0, 0)
         }
         root.addView(logText)
 
@@ -272,8 +271,8 @@ class MainActivity : Activity() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            elevation = dp(10).toFloat()
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            elevation = dp(12).toFloat()
             isClickable = true
             setOnClickListener { toggle(f.id) }
             addView(texts, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -302,12 +301,13 @@ class MainActivity : Activity() {
     private fun button(label: String, onClick: () -> Unit): TextView = TextView(this).apply {
         text = label
         gravity = Gravity.CENTER
-        textSize = 15f
+        textSize = 16f
         typeface = Typeface.DEFAULT_BOLD
         setTextColor(Color.WHITE)
-        setPadding(dp(16), dp(16), dp(16), dp(16))
-        background = glossy(18, "#3A3B46", "#202129", "#40FFFFFF")
-        elevation = dp(12).toFloat()
+        minHeight = dp(62)
+        setPadding(dp(18), dp(20), dp(18), dp(20))
+        background = glossy(20, "#4A4C5C", "#262731", "#80FFFFFF")
+        elevation = dp(18).toFloat()
         isClickable = true
         setOnClickListener { onClick() }
     }.also { tiltTargets.add(it) }
