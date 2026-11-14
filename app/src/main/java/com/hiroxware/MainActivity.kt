@@ -179,7 +179,6 @@ class MainActivity : Activity() {
         root.orientation = LinearLayout.VERTICAL
         root.setPadding(dp(14), dp(34), dp(14), dp(40))
 
-        // Header
         val header = LinearLayout(this)
         header.orientation = LinearLayout.HORIZONTAL
         header.gravity = Gravity.CENTER_VERTICAL
@@ -192,7 +191,6 @@ class MainActivity : Activity() {
         header.addView(makePill(Build.MODEL, accent))
         root.addView(header)
 
-        // Kartu utama dengan logo kelinci
         val hero = LinearLayout(this)
         hero.orientation = LinearLayout.HORIZONTAL
         hero.gravity = Gravity.CENTER_VERTICAL
@@ -228,7 +226,6 @@ class MainActivity : Activity() {
         root.addView(hero, topMargin(12))
         tiltTargets.add(hero)
 
-        // Baris ringkasan
         activeValue = makeValue("0")
         shizukuValue = makeValue("...")
         val stats = LinearLayout(this)
@@ -240,7 +237,6 @@ class MainActivity : Activity() {
         root.addView(stats, topMargin(12))
         tiltTargets.add(stats)
 
-        // Kartu angka
         ramCard = StatCard("RAM")
         batteryCard = StatCard("BATERAI")
         rateCard = StatCard("LAYAR")
@@ -252,13 +248,11 @@ class MainActivity : Activity() {
         tiltTargets.add(rateCard.view)
         tiltTargets.add(storageCard.view)
 
-        // Fitur
         root.addView(makeLabel("FITUR"), topMargin(22))
         for (f in features) {
             root.addView(makeFeatureCard(f), topMargin(12))
         }
 
-        // Tombol
         root.addView(makeButton("Revert ke Stok") { revertAll() }, topMargin(30))
         root.addView(makeButton("Izinkan Shizuku") { requestShizuku() }, topMargin(22))
 
@@ -570,4 +564,9 @@ class MainActivity : Activity() {
                 edit.putString(name, value ?: "null")
             }
         }
-        edit.ap
+        edit.apply()
+    }
+
+    private fun restoreCmd(s: Setting): String? {
+        val stored = prefs.getString("orig_${s.ns}_${s.key}", null) ?: return null
+        
