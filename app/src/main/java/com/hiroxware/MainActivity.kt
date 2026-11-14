@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
@@ -26,6 +27,7 @@ import android.widget.TextView
 import rikka.shizuku.Shizuku
 
 private const val ACCENT = "#FF2D55"
+private const val GREEN = "#34D399"
 private const val SUB = "#B5B3C9"
 private const val BG = "#1C1D24"
 
@@ -60,6 +62,9 @@ class MainActivity : Activity() {
     private lateinit var storageCard: Card
     private lateinit var rateCard: Card
     private lateinit var statusText: TextView
+    private lateinit var statusPill: TextView
+    private lateinit var activeValue: TextView
+    private lateinit var shizukuValue: TextView
     private lateinit var logText: TextView
 
     private val permListener = Shizuku.OnRequestPermissionResultListener { _, result ->
@@ -105,7 +110,7 @@ class MainActivity : Activity() {
                     textSize = 10f
                     setTextColor(Color.parseColor(SUB))
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(dot("#34D399"), LinearLayout.LayoutParams(dp(6), dp(6)).apply { setMargins(0, 0, dp(4), 0) })
+                addView(dot(GREEN), LinearLayout.LayoutParams(dp(6), dp(6)).apply { setMargins(0, 0, dp(4), 0) })
                 addView(dot(ACCENT), LinearLayout.LayoutParams(dp(6), dp(6)))
             }
             addView(top)
@@ -153,6 +158,7 @@ class MainActivity : Activity() {
             setPadding(dp(14), dp(34), dp(14), dp(24))
         }
 
+        // Header
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -162,28 +168,74 @@ class MainActivity : Activity() {
                 setTextColor(Color.parseColor(ACCENT))
                 typeface = Typeface.DEFAULT_BOLD
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(pill("ENGINE ACTIVE"))
+            addView(pill(Build.MODEL))
         }
         root.addView(header)
 
-        statusText = TextView(this).apply {
-            textSize = 11f
-            setTextColor(Color.parseColor(SUB))
-            setPadding(0, dp(4), 0, 0)
+        // Kartu utama dengan logo kelinci
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = glossy(24, "#2E2F3A", "#1B1C24", "#44FFFFFF")
+            elevation = dp(10).toFloat()
+            addView(TextView(this@MainActivity).apply {
+                text = "🐰"
+                textSize = 26f
+                gravity = Gravity.CENTER
+                background = glossy(20, "#3A1F28", "#261720", ACCENT)
+            }, LinearLayout.LayoutParams(dp(56), dp(56)))
+            addView(LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), 0, dp(8), 0)
+                addView(TextView(this@MainActivity).apply {
+                    text = "HIRÖXWARE"
+                    textSize = 15f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.WHITE)
+                })
+                statusText = TextView(this@MainActivity).apply {
+                    textSize = 11f
+                    setTextColor(Color.parseColor(SUB))
+                }
+                addView(statusText)
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            statusPill = pill("...")
+            addView(statusPill)
         }
-        root.addView(statusText)
+        root.addView(hero, topMargin(12))
+        tiltTargets.add(hero)
 
+        // Baris ringkasan
+        activeValue = valueText("0")
+        shizukuValue = valueText("...")
+        val stats = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = glossy(20, "#2E2F3A", "#1B1C24", "#33FFFFFF")
+            addView(column("FITUR AKTIF", activeValue), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(column("SHIZUKU", shizukuValue), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        root.addView(stats, topMargin(12))
+        tiltTargets.add(stats)
+
+        // Kartu angka
         ramCard = Card("RAM")
         batteryCard = Card("BATERAI")
         rateCard = Card("LAYAR")
         storageCard = Card("PENYIMPANAN")
         root.addView(row(ramCard.view, batteryCard.view))
         root.addView(row(rateCard.view, storageCard.view))
-        listOf(ramCard.view, batteryCard.view, rateCard.view, storageCard.view).forEach { tiltTargets.add(it) }
+        tiltTargets.add(ramCard.view)
+        tiltTargets.add(batteryCard.view)
+        tiltTargets.add(rateCard.view)
+        tiltTargets.add(storageCard.view)
 
+        // Fitur
         root.addView(label("FITUR"), topMargin(18))
         features.forEach { root.addView(featureCard(it), topMargin(10)) }
 
+        // Tombol
         root.addView(button("Revert ke Stok") { revertAll() }, topMargin(18))
         root.addView(button("Izinkan Shizuku") { requestShizuku() }, topMargin(10))
 
@@ -249,6 +301,7 @@ class MainActivity : Activity() {
             cards[f.id]?.background = if (on) glossy(22, "#3A1F28", "#261720", ACCENT)
             else glossy(22, "#2E2F3A", "#22232B", "#33FFFFFF")
         }
+        activeValue.text = features.count { isOn(it.id) }.toString()
     }
 
     private fun button(label: String, onClick: () -> Unit): TextView = TextView(this).apply {
@@ -264,13 +317,30 @@ class MainActivity : Activity() {
         setOnClickListener { onClick() }
     }.also { tiltTargets.add(it) }
 
-    private fun pill(label: String): TextView = TextView(this).apply {
+    private fun pill(label: String, color: String = ACCENT): TextView = TextView(this).apply {
         text = label
         textSize = 9f
         typeface = Typeface.DEFAULT_BOLD
-        setTextColor(Color.parseColor(ACCENT))
+        setTextColor(Color.parseColor(color))
         setPadding(dp(8), dp(4), dp(8), dp(4))
-        background = glossy(12, "#2A2B35", "#1E1F27", ACCENT)
+        background = glossy(12, "#2A2B35", "#1E1F27", color)
+    }
+
+    private fun valueText(v: String): TextView = TextView(this).apply {
+        text = v
+        textSize = 16f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.WHITE)
+    }
+
+    private fun column(label: String, value: TextView): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        addView(TextView(this@MainActivity).apply {
+            text = label
+            textSize = 9f
+            setTextColor(Color.parseColor(SUB))
+        })
+        addView(value)
     }
 
     private fun dot(hex: String): View = View(this).apply {
@@ -349,10 +419,23 @@ class MainActivity : Activity() {
     }
 
     private fun refreshStatus() {
+        val alive = shizukuBinderAlive()
+        val granted = alive && shizukuGranted()
         statusText.text = when {
-            !shizukuBinderAlive() -> "Shizuku belum aktif. Buka Shizuku dulu."
-            !shizukuGranted() -> "Shizuku aktif, tapi izin belum diberikan."
+            !alive -> "Shizuku belum aktif. Buka Shizuku dulu."
+            !granted -> "Shizuku aktif, tapi izin belum diberikan."
             else -> "Shizuku siap. Tanpa root."
+        }
+        statusPill.text = when {
+            !alive -> "MATI"
+            !granted -> "IZIN"
+            else -> "SIAP"
+        }
+        statusPill.setTextColor(Color.parseColor(if (granted) GREEN else ACCENT))
+        shizukuValue.text = when {
+            !alive -> "Mati"
+            !granted -> "Belum izin"
+            else -> "Siap"
         }
     }
 
@@ -458,6 +541,4 @@ class MainActivity : Activity() {
         val edit = prefs.edit()
         features.forEach { edit.putBoolean("on_${it.id}", false) }
         edit.apply()
-        applyAll(resetAfter = true)
-    }
-}
+ 
