@@ -27,7 +27,6 @@ import rikka.shizuku.Shizuku
 
 class MainActivity : Activity() {
 
-    // Pengaturan yang diubah. Semuanya bisa dikembalikan lewat tombol Kembalikan.
     private val tweaks = listOf(
         Triple("global", "window_animation_scale", "0.5"),
         Triple("global", "transition_animation_scale", "0.5"),
@@ -67,32 +66,43 @@ class MainActivity : Activity() {
             typeface = Typeface.DEFAULT_BOLD
         }
         val sub = TextView(this@MainActivity).apply {
-            textSize = 12f
-            setTextColor(Color.parseColor("#9A96C8"))
+            textSize = 11f
+            setTextColor(Color.parseColor("#8F8BC7"))
         }
         val bar = ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100
             progressTintList = ColorStateList.valueOf(Color.parseColor("#FF2D55"))
-            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#2A2750"))
+            progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#2A2757"))
         }
+        val dotGreen = dot("#34D399")
+        val dotRed = dot("#FF2D55")
+
         val view = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = roundBox("#1C1A3A", "#3A3670", 18)
-            addView(TextView(this@MainActivity).apply {
-                text = title
-                textSize = 11f
-                setTextColor(Color.parseColor("#B9B5E8"))
-            })
+            background = box("#1C1A44", "#4B47A0", 20)
+
+            val top = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(TextView(this@MainActivity).apply {
+                    text = title
+                    textSize = 10f
+                    setTextColor(Color.parseColor("#B8B4EC"))
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(dotGreen, LinearLayout.LayoutParams(dp(6), dp(6)).apply { setMargins(0, 0, dp(4), 0) })
+                addView(dotRed, LinearLayout.LayoutParams(dp(6), dp(6)))
+            }
+            addView(top)
             addView(value)
             addView(sub)
-            addView(bar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(6)).apply {
-                topMargin = dp(6)
+            addView(bar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(4)).apply {
+                topMargin = dp(10)
             })
         }
     }
 
-    // ---------- Tampilan ----------
+    // ---------- Siklus hidup ----------
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,50 +126,75 @@ class MainActivity : Activity() {
         Shizuku.removeRequestPermissionResultListener(permListener)
     }
 
+    // ---------- Tampilan ----------
+
     private fun buildUi(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#0D0B1F"))
-            setPadding(dp(16), dp(28), dp(16), dp(24))
+            setBackgroundColor(Color.parseColor("#0A0920"))
+            setPadding(dp(14), dp(28), dp(14), dp(24))
         }
 
         // Header
-        root.addView(TextView(this).apply {
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(this).apply {
             text = "Hiröxware"
-            textSize = 28f
+            textSize = 24f
             setTextColor(Color.parseColor("#FF2D55"))
             typeface = Typeface.DEFAULT_BOLD
-        })
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        header.addView(pill("ENGINE ACTIVE"))
+        root.addView(header)
+
         statusText = TextView(this).apply {
-            textSize = 12f
-            setTextColor(Color.parseColor("#9A96C8"))
+            textSize = 11f
+            setTextColor(Color.parseColor("#8F8BC7"))
+            setPadding(0, dp(4), 0, 0)
         }
         root.addView(statusText)
 
-        // Kartu angka
+        // Kartu utama
         ramCard = Card("RAM")
         batteryCard = Card("BATERAI")
-        storageCard = Card("PENYIMPANAN")
         rateCard = Card("LAYAR")
+        storageCard = Card("PENYIMPANAN")
         root.addView(row(ramCard.view, batteryCard.view))
         root.addView(row(rateCard.view, storageCard.view))
 
-        // Tombol
-        root.addView(bigButton("Aktifkan Tweak", "#FF2D55") { applyTweaks() }, topMargin(14))
-        root.addView(bigButton("Kembalikan ke Stok", "#3A3670") { revertTweaks() }, topMargin(10))
-        root.addView(bigButton("Izinkan Shizuku", "#2A2750") { requestShizuku() }, topMargin(10))
+        // Tombol utama
+        root.addView(bigButton("Aktifkan Tweak", "#FF2D55", "#FF7A93") { applyTweaks() }, topMargin(16))
+        root.addView(bigButton("Kembalikan ke Stok", "#3B3880", "#6A64C8") { revertTweaks() }, topMargin(10))
+        root.addView(bigButton("Izinkan Shizuku", "#262450", "#3B3880") { requestShizuku() }, topMargin(10))
 
-        // Log
         logText = TextView(this).apply {
             textSize = 12f
-            setTextColor(Color.parseColor("#B9B5E8"))
+            setTextColor(Color.parseColor("#B8B4EC"))
             setPadding(0, dp(14), 0, 0)
         }
         root.addView(logText)
 
         return ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#0D0B1F"))
+            setBackgroundColor(Color.parseColor("#0A0920"))
             addView(root)
+        }
+    }
+
+    private fun pill(label: String): TextView = TextView(this).apply {
+        text = label
+        textSize = 9f
+        setTextColor(Color.parseColor("#FF2D55"))
+        typeface = Typeface.DEFAULT_BOLD
+        setPadding(dp(8), dp(4), dp(8), dp(4))
+        background = box("#1C1A44", "#FF2D55", 12)
+    }
+
+    private fun dot(hex: String): View = View(this).apply {
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.parseColor(hex))
         }
     }
 
@@ -174,11 +209,12 @@ class MainActivity : Activity() {
             })
         }
 
-    private fun bigButton(label: String, color: String, onClick: () -> Unit): Button =
+    private fun bigButton(label: String, fill: String, stroke: String, onClick: () -> Unit): Button =
         Button(this).apply {
             text = label
+            isAllCaps = false
             setTextColor(Color.WHITE)
-            background = roundBox(color, color, 16)
+            background = box(fill, stroke, 18)
             setOnClickListener { onClick() }
         }
 
@@ -186,7 +222,7 @@ class MainActivity : Activity() {
         LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             .apply { topMargin = dp(px) }
 
-    private fun roundBox(fill: String, stroke: String, radiusDp: Int) = GradientDrawable().apply {
+    private fun box(fill: String, stroke: String, radiusDp: Int) = GradientDrawable().apply {
         setColor(Color.parseColor(fill))
         setStroke(dp(1), Color.parseColor(stroke))
         cornerRadius = dp(radiusDp).toFloat()
@@ -201,7 +237,6 @@ class MainActivity : Activity() {
     // ---------- Data layar ----------
 
     private fun updateStats() {
-        // RAM
         val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
         val mi = ActivityManager.MemoryInfo()
         am.getMemoryInfo(mi)
@@ -210,27 +245,24 @@ class MainActivity : Activity() {
         ramCard.sub.text = "%.1fGB total".format(mi.totalMem / 1e9)
         ramCard.bar.progress = usedPct
 
-        // Baterai
         val bat = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val level = bat?.getIntExtra(BatteryManager.EXTRA_LEVEL, 0) ?: 0
         batteryCard.value.text = "$level%"
         batteryCard.sub.text = "Level saat ini"
         batteryCard.bar.progress = level
 
-        // Penyimpanan
+        @Suppress("DEPRECATION")
+        val hz = windowManager.defaultDisplay.refreshRate
+        rateCard.value.text = "%.0fHz".format(hz)
+        rateCard.sub.text = "Refresh rate saat ini"
+        rateCard.bar.progress = (hz / 1.2f).toInt().coerceAtMost(100)
+
         val stat = StatFs(Environment.getDataDirectory().path)
         val total = stat.totalBytes
         val free = stat.availableBytes
         storageCard.value.text = "%.0fGB".format((total - free) / 1e9)
         storageCard.sub.text = "%.0fGB total, %.0fGB kosong".format(total / 1e9, free / 1e9)
         storageCard.bar.progress = ((total - free) * 100 / total).toInt()
-
-        // Refresh rate layar
-        @Suppress("DEPRECATION")
-        val hz = windowManager.defaultDisplay.refreshRate
-        rateCard.value.text = "%.0fHz".format(hz)
-        rateCard.sub.text = "Refresh rate saat ini"
-        rateCard.bar.progress = (hz / 1.2f).toInt().coerceAtMost(100)
     }
 
     private fun refreshStatus() {
@@ -267,7 +299,6 @@ class MainActivity : Activity() {
         Shizuku.requestPermission(0)
     }
 
-    // Menjalankan perintah shell lewat Shizuku. Hanya perintah "settings" yang dipakai.
     private fun runShell(cmd: String): Boolean = try {
         val m = Shizuku::class.java.getDeclaredMethod(
             "newProcess",
