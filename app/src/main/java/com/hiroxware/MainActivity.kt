@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.BatteryManager
 import android.os.Bundle
@@ -27,9 +26,8 @@ import android.widget.TextView
 import rikka.shizuku.Shizuku
 
 private const val ACCENT = "#FF2D55"
-private const val SUB = "#C4C0F2"
-private const val GLASS = "#331B1A3F"
-private const val STROKE = "#665B57C9"
+private const val SUB = "#B5B3C9"
+private const val BG = "#1C1D24"
 
 class MainActivity : Activity() {
 
@@ -94,13 +92,21 @@ class MainActivity : Activity() {
         val view = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = box(GLASS, STROKE, 20)
-            elevation = dp(10).toFloat()
-            addView(TextView(this@MainActivity).apply {
-                text = title
-                textSize = 10f
-                setTextColor(Color.parseColor(SUB))
-            })
+            background = glossy(20, "#2E2F3A", "#22232B", "#33FFFFFF")
+            elevation = dp(8).toFloat()
+
+            val top = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(TextView(this@MainActivity).apply {
+                    text = title
+                    textSize = 10f
+                    setTextColor(Color.parseColor(SUB))
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                addView(dot("#34D399"), LinearLayout.LayoutParams(dp(6), dp(6)).apply { setMargins(0, 0, dp(4), 0) })
+                addView(dot(ACCENT), LinearLayout.LayoutParams(dp(6), dp(6)))
+            }
+            addView(top)
             addView(value)
             addView(sub)
             addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(4)).apply {
@@ -113,7 +119,6 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         setContentView(buildUi())
         Shizuku.addRequestPermissionResultListener(permListener)
         refreshToggles()
@@ -152,7 +157,7 @@ class MainActivity : Activity() {
                 setTextColor(Color.parseColor(ACCENT))
                 typeface = Typeface.DEFAULT_BOLD
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(pill("ENGINE ACTIVE", ACCENT))
+            addView(pill("ENGINE ACTIVE"))
         }
         root.addView(header)
 
@@ -173,8 +178,8 @@ class MainActivity : Activity() {
         root.addView(label("FITUR"), topMargin(18))
         features.forEach { root.addView(featureCard(it), topMargin(10)) }
 
-        root.addView(floatingButton("Revert ke Stok", "#663B3880", "#66FFFFFF") { revertAll() }, topMargin(18))
-        root.addView(floatingButton("Izinkan Shizuku", "#66262450", "#55FFFFFF") { requestShizuku() }, topMargin(10))
+        root.addView(button("Revert ke Stok") { revertAll() }, topMargin(18))
+        root.addView(button("Izinkan Shizuku") { requestShizuku() }, topMargin(10))
 
         logText = TextView(this).apply {
             textSize = 12f
@@ -183,7 +188,10 @@ class MainActivity : Activity() {
         }
         root.addView(logText)
 
-        return ScrollView(this).apply { addView(root) }
+        return ScrollView(this).apply {
+            setBackgroundColor(Color.parseColor(BG))
+            addView(root)
+        }
     }
 
     private fun featureCard(f: Feature): LinearLayout {
@@ -212,7 +220,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(14), dp(16), dp(14))
-            elevation = dp(12).toFloat()
+            elevation = dp(10).toFloat()
             isClickable = true
             setOnClickListener { toggle(f.id) }
             addView(texts, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -228,33 +236,41 @@ class MainActivity : Activity() {
             badges[f.id]?.apply {
                 text = if (on) "ON" else "OFF"
                 setTextColor(Color.parseColor(if (on) "#FFFFFF" else SUB))
-                background = box(if (on) ACCENT else "#22FFFFFF", if (on) ACCENT else "#44FFFFFF", 14)
+                background = if (on) glossy(14, "#FF2D55", "#D41E44", "#FF7A93")
+                else glossy(14, "#33FFFFFF", "#22FFFFFF", "#44FFFFFF")
             }
-            cards[f.id]?.background = box(if (on) "#33FF2D55" else GLASS, if (on) ACCENT else STROKE, 22)
+            cards[f.id]?.background = if (on) glossy(22, "#3A1F28", "#261720", ACCENT)
+            else glossy(22, "#2E2F3A", "#22232B", "#33FFFFFF")
         }
     }
 
-    private fun floatingButton(label: String, fill: String, stroke: String, onClick: () -> Unit): TextView =
-        TextView(this).apply {
-            text = label
-            gravity = Gravity.CENTER
-            textSize = 15f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = box(fill, stroke, 22)
-            elevation = dp(14).toFloat()
-            isClickable = true
-            setOnClickListener { onClick() }
-        }
+    private fun button(label: String, onClick: () -> Unit): TextView = TextView(this).apply {
+        text = label
+        gravity = Gravity.CENTER
+        textSize = 15f
+        typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.WHITE)
+        setPadding(dp(16), dp(16), dp(16), dp(16))
+        background = glossy(18, "#3A3B46", "#202129", "#40FFFFFF")
+        elevation = dp(12).toFloat()
+        isClickable = true
+        setOnClickListener { onClick() }
+    }
 
-    private fun pill(label: String, color: String): TextView = TextView(this).apply {
+    private fun pill(label: String): TextView = TextView(this).apply {
         text = label
         textSize = 9f
         typeface = Typeface.DEFAULT_BOLD
-        setTextColor(Color.parseColor(color))
+        setTextColor(Color.parseColor(ACCENT))
         setPadding(dp(8), dp(4), dp(8), dp(4))
-        background = box("#1C1A44", color, 12)
+        background = glossy(12, "#2A2B35", "#1E1F27", ACCENT)
+    }
+
+    private fun dot(hex: String): View = View(this).apply {
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.parseColor(hex))
+        }
     }
 
     private fun label(text: String): TextView = TextView(this).apply {
@@ -279,11 +295,15 @@ class MainActivity : Activity() {
         LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             .apply { topMargin = dp(px) }
 
-    private fun box(fill: String, stroke: String, radiusDp: Int) = GradientDrawable().apply {
-        setColor(Color.parseColor(fill))
-        setStroke(dp(1), Color.parseColor(stroke))
-        cornerRadius = dp(radiusDp).toFloat()
-    }
+    // Latar kaca abu-abu: gradasi dari atas ke bawah, sudut membulat, garis tipis
+    private fun glossy(radiusDp: Int, top: String, bottom: String, stroke: String) =
+        GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(Color.parseColor(top), Color.parseColor(bottom))
+        ).apply {
+            cornerRadius = dp(radiusDp).toFloat()
+            setStroke(dp(1), Color.parseColor(stroke))
+        }
 
     private fun dp(n: Int): Int = (n * resources.displayMetrics.density).toInt()
 
